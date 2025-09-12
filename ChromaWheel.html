@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChromaWheel Color Picker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- Tailwind 配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        neutral: '#64748B',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'elevation-1': '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                        'elevation-2': '0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12)',
+                    }
+                },
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .color-transition {
+                transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            }
+            .transform-transition {
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+            /* 亮度环样式 */
+            .lightness-ring {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                pointer-events: auto;
+            }
+            /* 亮度环标记 - 调整大小与环的宽度匹配 */
+            .ring-marker {
+                position: absolute;
+                width: 14px;
+                height: 14px;
+                border: 2px solid white;
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+                pointer-events: auto;
+                z-index: 10;
+            }
+            /* 颜色圆盘标记 */
+            .wheel-marker {
+                width: 14px;
+                height: 14px;
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 0 1px rgba(0,0,0,0.3);
+                transform: translate(-50%, -50%);
+                pointer-events: auto;
+                z-index: 10;
+            }
+            /* 泪滴形状样式，一个角为0，其它为50% */
+            .teardrop-left-bottom {
+                width: 30px;
+                height: 30px;
+                border-radius: 50% 50% 50% 0;
+                overflow: hidden;
+            }
+            .teardrop-right-bottom {
+                width: 30px;
+                height: 30px;
+                border-radius: 50% 50% 0 50%;
+                overflow: hidden;
+            }
+            .teardrop-left-top {
+                width: 30px;
+                height: 30px;
+                border-radius: 0 50% 50% 50%;
+                overflow: hidden;
+            }
+            .teardrop-right-top {
+                width: 30px;
+                height: 30px;
+                border-radius: 50% 0 50% 50%;
+                overflow: hidden;
+            }
+            .preset-color {
+                @apply  cursor-pointer transition-transform hover:scale-110;
+                box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.2);
+                border: 1px solid rgba(0, 0, 0, 0.5);
+            }
+            .fav-color.filled{
+                @apply w-6 h-6 rounded-full cursor-pointer transform transition hover:scale-110  pointer-events-auto;
+                box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+            }
+            .fav-color.notfill{
+                @apply w-6 h-6 rounded-full  flex items-center justify-center text-gray-400 text-xs cursor-pointer hover:border-gray-400 transition-colors pointer-events-auto;
+                box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.2);
+                border: 1px dashed #fff;
+            }
+        }
+    </style>
+</head>
+
+<body class="font-inter bg-gray-500 min-h-screen flex items-center justify-center p-4">
+    <!-- 主容器 -->
+    <div class="bg-gray-700 rounded-xl shadow-elevation-2 max-w-md overflow-hidden transform-transition">
+        <!-- 标题栏 -->
+        <div class="px-4 py-3 border-b border-gray-700 flex justify-between items-center">
+            <h1 class="text-sm font-semibold text-white">ChromaWheel Color Picker</h1>
+            <button id="close-btn" class="text-gray-400 hover:text-white color-transition text-xs">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <!-- 颜色选择器 -->
+        <div id="color-picker-container" class="relative w-[300px] h-[300px] m-auto overflow-hidden">
+            <!-- 网格背景 - 应用于整个颜色选择器 -->
+            <div
+                class="absolute inset-0 bg-[repeating-conic-gradient(#000000_0deg_90deg,#FFFFFF_90deg_180deg)] bg-[length:8px_8px] opacity-5 z-0">
+            </div>
+            <!-- 颜色选择区域 - 亮度环和色盘叠放 -->
+            <div id="color-selector" class="absolute inset-0 flex items-center justify-center pointer-events-auto z-10"
+                style="filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.5));">
+                <!-- 分段环弧容器 - 位于底层 -->
+                <div id="ring-container" class="absolute w-[220px] h-[220px]  overflow-hidden">
+                    <!-- 分段环弧将通过JS生成 -->
+                    <!-- 饱和度环弧标记 -->
+                    <div id="saturation-marker" class="ring-marker absolute hidden" title="饱和度"></div>
+                    <!-- 亮度环弧标记 -->
+                    <div id="lightness-marker" class="ring-marker absolute hidden" title="亮度"></div>
+                    <!-- 透明度环弧标记 -->
+                    <div id="alpha-marker" class="ring-marker absolute hidden" title="透明度"></div>
+                </div>
+                <!-- 彩色圆盘 - 位于上层 -->
+                <div id="color-wheel" class="absolute w-[200px] h-[200px]  overflow-hidden">
+                    <!-- 颜色圆盘将通过JS生成 -->
+                    <!-- 颜色圆盘标记 -->
+                    <div id="wheel-marker" class="wheel-marker absolute hidden" title="色相"></div>
+                </div>
+            </div>
+
+            <!-- 葫芦形SVG容器 - 位于底部 -->
+            <svg viewBox="0 0 251 384" class="absolute w-24 h-28 z-1" style="left: -8px;top: 4px;" color="#374151">
+                <path
+                    d="M125.75 3.976C192.92 3.977 247.37 58.425 247.37 125.59 247.37 167.568 226.1 204.579 193.75 226.434L182.35 232.622 166.1 239.278C155.49 245.997 145.87 257.4 139.74 271.91 133.61 286.41 132.15 301.27 134.73 313.56L134.99 318.93 134.77 328.4C128.77 357.72 102.82 379.79 71.72 379.79 36.17 379.79 7.36 350.97 7.36 315.43 7.36 306.54 9.16 298.07 12.42 290.37L15.41 285.94 19.17 281.44C27.91 272.42 34.59 259.08 37.15 243.544 40.99 220.241 33.78 203.552 21.85 187.78L13.7 172.927C7.54 158.378 4.14 142.381 4.14 125.59 4.14 58.425 58.59 3.976 125.75 3.976Z"
+                    fill="none" stroke="rgba(128,128,128, 1)" stroke-width="4" />
+            </svg>
+
+            <!-- 圆形颜色预览 - 位于左上角 -->
+            <div id="color-preview"
+                class="absolute top-2 left-2 w-16 h-16 rounded-full shadow-lg  relative overflow-hidden z-10"
+                style="border: 2px solid #808080;"></div>
+            <!-- 圆形初始颜色 - 位于左上角 -->
+            <div id="color-start"
+                class="absolute top-4 left-2 w-8 h-8 rounded-full shadow-lg  relative overflow-hidden z-10"
+                style="border: 2px solid #808080;"></div>
+            <!-- 预定义颜色 - 右上角 -->
+            <div class="preset-color teardrop-right-bottom absolute top-2 right-11 z-10">
+            </div>
+            <div class="preset-color teardrop-left-bottom absolute top-2 right-2 z-10">
+            </div>
+            <div class="preset-color teardrop-left-top absolute top-11 right-2 z-10">
+            </div>
+
+            <!-- 预定义颜色 - 右下角 -->
+            <div class="preset-color teardrop-left-bottom absolute bottom-11 right-2 z-10">
+            </div>
+            <div class="preset-color teardrop-left-top absolute bottom-2 right-2 z-10">
+            </div>
+            <div class="preset-color teardrop-right-top absolute bottom-2 right-11 z-10">
+            </div>
+
+            <!-- 预定义颜色 - 左下角 -->
+            <div class="preset-color teardrop-left-top absolute bottom-2 left-11 z-10">
+            </div>
+            <div class="preset-color teardrop-right-top absolute bottom-2 left-2 z-10">
+            </div>
+            <div class="preset-color teardrop-right-bottom absolute bottom-11 left-2 z-10">
+            </div>
+            <!-- 收藏的颜色-底部 -->
+            <div class="absolute left-1/2 bottom-2 transform -translate-x-1/2 flex flex-wrap gap-1.5 z-10">
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div i class="fav-color"></div>
+            </div>
+            <!-- 收藏的颜色-右侧 -->
+            <div class="absolute top-1/2 right-2 transform -translate-y-1/2 flex flex-col gap-1.5 z-10">
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+                <div class="fav-color"></div>
+            </div>
+
+            <div id="lockSaturation" title="锁定饱和度"
+                style="top:30px;left:142px;display:flex;align-items:center;justify-content:center;"
+                class="absolute w-4 h-4 bg-gray-800 rounded-full cursor-pointer transform transition hover:scale-150  pointer-events-auto z-10">
+                <i class="fa fa-unlock text-white" style="font-size:8px;"></i>
+            </div>
+            <!-- 背景色切换区域 -->
+            <div id="bgColorSlider"
+                class="h-16 w-4 rounded-full cursor-pointer absolute z-10 hover:opacity-90 transition-opacity"
+                style="top:140px;left:10px;background: linear-gradient(to bottom, #374151 0%, #374151 25%, #FFFFFF 25%, #FFFFFF 50%, #808080 50%, #808080 75%, #000000 75%, #000000 100%);box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.2);">
+            </div>
+        </div>
+
+
+        <!-- 颜色输入区 -->
+        <div class="px-4 pb-3 pt-2">
+
+            <div class="flex">
+                <select id="color-format-select"
+                    class="w-16 px-2 py-1.5 border border-gray-700 bg-gray-800 rounded-l-lg focus:outline-none focus:ring-1.5 focus:ring-primary/50 text-xs text-white appearance-none">
+                    <option value="hex">HEX</option>
+                    <option value="rgb">RGB</option>
+                    <option value="rgba">RGBA</option>
+                    <option value="hsl">HSL</option>
+                    <option value="hsla">HSLA</option>
+                </select>
+                <input type="text" id="color-value-input" value="#3B82F6"
+                    class="flex-1 px-2 py-1.5 border-l-0 border border-gray-700 bg-gray-800 focus:outline-none focus:ring-1.5 focus:ring-primary/50 text-xs text-white" />
+                <button id="copy-color-btn"
+                    class="copy-btn bg-gray-800 hover:bg-gray-600 px-2 py-1.5 rounded-r-lg color-transition text-xs">
+                    <i class="fa fa-copy text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 复制成功提示 -->
+    <div id="copy-toast"
+        class="fixed top-4 right-4 bg-dark text-white px-3 py-1.5 rounded-lg shadow-elevation-2 opacity-0 transition-opacity duration-300 pointer-events-none text-xs">
+        <span>Copied!</span>
+    </div>
+
+</body>
+
+<script>
+    // 颜色转换工具函数
+    const ColorUtils = {
+        // HSL 转 RGB
+        hslToRgb: (h, s, l) => {
+            s /= 100;
+            l /= 100;
+
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l; // 灰色
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+
+                r = hue2rgb(p, q, h / 360 + 1 / 3);
+                g = hue2rgb(p, q, h / 360);
+                b = hue2rgb(p, q, h / 360 - 1 / 3);
+            }
+
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        },
+
+        // RGB 转 HEX
+        rgbToHex: (r, g, b) => {
+            return `#${[r, g, b]
+                .map(x => Math.round(x).toString(16).padStart(2, '0'))
+                .join('')
+                .toUpperCase()}`;
+        },
+
+        // RGB 转 HSL
+        rgbToHsl: (r, g, b) => {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0; // 灰色
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+
+                h *= 60;
+            }
+
+            return {
+                h: Math.round(h),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        },
+
+        // HEX 转 RGB
+        hexToRgb: (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        },
+
+        // RGB 转 RGBA
+        rgbToRgba: (rgb, a = 100) => {
+            return {
+                r: rgb.r,
+                g: rgb.g,
+                b: rgb.b,
+                a: a
+            };
+        },
+
+        // RGBA 转字符串
+        rgbaToString: (r, g, b, a) => {
+            return `rgba(${r}, ${g}, ${b}, ${a / 100})`;
+        },
+
+        // 字符串转 RGBA
+        stringToRgba: (str) => {
+            const match = str.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(0|1|0\.\d+)\s*\)$/);
+            if (match) {
+                const r = parseInt(match[1]);
+                const g = parseInt(match[2]);
+                const b = parseInt(match[3]);
+                const a = Math.round(parseFloat(match[4]) * 100);
+                return { r, g, b, a };
+            }
+            return null;
+        },
+
+        // HSL 转 HSLA
+        hslToHsla: (hsl, a = 100) => {
+            return {
+                h: hsl.h,
+                s: hsl.s,
+                l: hsl.l,
+                a: a
+            };
+        },
+
+        // HSLA 转字符串
+        hslaToString: (h, s, l, a) => {
+            return `hsla(${h}, ${s}%, ${l}%, ${a / 100})`;
+        },
+
+        // 字符串转 HSLA
+        stringToHsla: (str) => {
+            const match = str.match(/^hsla\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(0|1|0\.\d+)\s*\)$/);
+            if (match) {
+                const h = parseInt(match[1]);
+                const s = parseInt(match[2]);
+                const l = parseInt(match[3]);
+                const a = Math.round(parseFloat(match[4]) * 100);
+                return { h, s, l, a };
+            }
+            return null;
+        },
+
+        // 从圆盘位置计算HSL颜色
+        positionToHsl: (x, y, centerX, centerY, radius) => {
+            const dx = x - centerX;
+            const dy = centerY - y;
+            const distance = Math.min(Math.sqrt(dx * dx + dy * dy), radius);
+            // 修正色相角度计算，使圆盘与滑块保持一致
+            const angle = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360;
+
+            return {
+                h: angle,
+                s: (distance / radius) * 100,
+                l: 50
+            };
+        },
+
+        // 通用颜色字符串解析函数，支持HEX、RGB、RGBA、HSL、HSLA格式
+        // 确保返回包含完整的h、s、l、r、g、b、a属性的对象
+        colorStringToObject: (colorStr) => {
+            if (!colorStr || typeof colorStr !== 'string') {
+                return null;
+            }
+
+            // 去除空格，便于解析
+            colorStr = colorStr.trim().replace(/\s+/g, '');
+
+            // 确保所有返回值都包含完整的属性
+            const result = {
+                h: 0,
+                s: 0,
+                l: 0,
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 100
+            };
+
+            // 尝试解析HEX格式
+            if (/^#[0-9A-Fa-f]{3,6}$/.test(colorStr)) {
+                const rgb = ColorUtils.hexToRgb(colorStr);
+                if (rgb) {
+                    const hsl = ColorUtils.rgbToHsl(rgb.r, rgb.g, rgb.b);
+                    if (hsl) {
+                        return {
+                            h: hsl.h || 0,
+                            s: hsl.s || 0,
+                            l: hsl.l || 0,
+                            r: rgb.r || 0,
+                            g: rgb.g || 0,
+                            b: rgb.b || 0,
+                            a: 100
+                        };
+                    }
+                }
+            }
+
+            // 尝试解析RGB格式
+            const rgbMatch = colorStr.match(/^rgb\((\d+),(\d+),(\d+)\)$/i);
+            if (rgbMatch) {
+                const r = parseInt(rgbMatch[1]) || 0;
+                const g = parseInt(rgbMatch[2]) || 0;
+                const b = parseInt(rgbMatch[3]) || 0;
+                const hsl = ColorUtils.rgbToHsl(r, g, b);
+                if (hsl) {
+                    return {
+                        h: hsl.h || 0,
+                        s: hsl.s || 0,
+                        l: hsl.l || 0,
+                        r: r,
+                        g: g,
+                        b: b,
+                        a: 100
+                    };
+                }
+            }
+
+            // 尝试解析RGBA格式
+            const rgbaMatch = colorStr.match(/^rgba\((\d+),(\d+),(\d+),(0|1|0\.\d+)\)$/i);
+            if (rgbaMatch) {
+                const r = parseInt(rgbaMatch[1]) || 0;
+                const g = parseInt(rgbaMatch[2]) || 0;
+                const b = parseInt(rgbaMatch[3]) || 0;
+                const a = Math.round(parseFloat(rgbaMatch[4]) * 100) || 100;
+                const hsl = ColorUtils.rgbToHsl(r, g, b);
+                if (hsl) {
+                    return {
+                        h: hsl.h || 0,
+                        s: hsl.s || 0,
+                        l: hsl.l || 0,
+                        r: r,
+                        g: g,
+                        b: b,
+                        a: a
+                    };
+                }
+            }
+
+            // 尝试解析HSL格式
+            const hslMatch = colorStr.match(/^hsl\((\d+),(\d+)%?,(\d+)%?\)$/i);
+            if (hslMatch) {
+                const h = parseInt(hslMatch[1]) || 0;
+                const s = parseInt(hslMatch[2]) || 0;
+                const l = parseInt(hslMatch[3]) || 0;
+                const rgb = ColorUtils.hslToRgb(h, s, l);
+                if (rgb) {
+                    return {
+                        h: h,
+                        s: s,
+                        l: l,
+                        r: rgb.r || 0,
+                        g: rgb.g || 0,
+                        b: rgb.b || 0,
+                        a: 100
+                    };
+                }
+            }
+
+            // 尝试解析HSLA格式
+            const hslaMatch = colorStr.match(/^hsla\((\d+),(\d+)%?,(\d+)%?,(0|1|0\.\d+)\)$/i);
+            if (hslaMatch) {
+                const h = parseInt(hslaMatch[1]) || 0;
+                const s = parseInt(hslaMatch[2]) || 0;
+                const l = parseInt(hslaMatch[3]) || 0;
+                const a = Math.round(parseFloat(hslaMatch[4]) * 100) || 100;
+                const rgb = ColorUtils.hslToRgb(h, s, l);
+                if (rgb) {
+                    return {
+                        h: h,
+                        s: s,
+                        l: l,
+                        r: rgb.r || 0,
+                        g: rgb.g || 0,
+                        b: rgb.b || 0,
+                        a: a
+                    };
+                }
+            }
+
+            return null;
+        },
+
+        // 从HSL计算圆盘位置
+        hslToPosition: (h, s, centerX, centerY, radius) => {
+            const radians = h * Math.PI / 180;
+            const distance = (s / 100) * radius;
+
+            // 修正Y轴方向，使圆盘与滑块保持一致
+            return {
+                x: centerX + distance * Math.cos(radians),
+                y: centerY - distance * Math.sin(-radians)
+            };
+        }
+    };
+
+    /**
+     * 创建色彩选择器的环形控件
+     * @param {HTMLElement} element - 要渲染环形的DOM元素
+     * @param {Object} currentColor - HSLA格式的基础颜色对象，包含.h, .s, .l, .a属性
+     * @returns {Object} 返回包含canvas信息的对象
+     */
+    function createRing(element, currentColor = null) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = Math.min(element.clientWidth, element.clientHeight);
+        const scale = 2;
+        canvas.width = size * scale;
+        canvas.height = size * scale;
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+        canvas.className = 'lightness-ring';
+        canvas.style.zIndex = '0'; // 确保亮度环位于色盘下层
+
+        // 只删除已经存在的canvas元素，保留其他元素如ring-marker
+        const existingCanvases = element.querySelectorAll('canvas');
+        existingCanvases.forEach(canvasEl => {
+            element.removeChild(canvasEl);
+        });
+        element.appendChild(canvas);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const outerRadius = canvas.width / 2;
+        const innerRadius = outerRadius * 0.87; // 环的宽度，设置为外半径的0.9倍，使内径大于色盘的外径
+
+        // 定义三个分段环弧的起始角度和占用角度
+        // 每个弧占用100度
+        const segments = [
+            { startAngle: 160, arcAngle: 100, type: 'saturation' },  // 160度到260度
+            { startAngle: 280, arcAngle: 100, type: 'lightness' },   // -80度到20度（280度到380度，即280度到20度）
+            { startAngle: 40, arcAngle: 100, type: 'alpha' }         // 40度到140度
+        ];
+
+        // 为每个分段绘制环弧
+        segments.forEach(segment => {
+            if (ctx.createConicGradient) {
+                // 使用圆锥渐变创建环弧
+                const gradient = ctx.createConicGradient(segment.startAngle * Math.PI / 180, centerX, centerY);
+
+                // 声明起始颜色和结束颜色变量
+                let startColor, endColor;
+
+                // 根据环弧类型设置不同的渐变颜色
+                if (segment.type === 'saturation') {
+                    // 饱和度环弧：从基于当前h值的基色（固定s=100%）到灰色的渐变
+                    // 为饱和度弧创建基于当前h值的基色（固定s=100%，l=50%）
+                    const saturationBaseColor = ColorUtils.hslToRgb(currentColor.h, 100, 50);
+                    startColor = `rgba(${saturationBaseColor.r}, ${saturationBaseColor.g}, ${saturationBaseColor.b}, 1)`;
+                    endColor = 'rgba(128, 128, 128, 1)';
+                    gradient.addColorStop(0, startColor);
+                    gradient.addColorStop(segment.arcAngle / 360, endColor);
+                    gradient.addColorStop((segment.arcAngle + 20) / 360, endColor);
+                    gradient.addColorStop(1, startColor);
+                } else if (segment.type === 'lightness') {
+                    // 亮度环弧：从白色到黑色的渐变
+                    const lightnessBaseColor = ColorUtils.hslToRgb(currentColor.h, currentColor.s, 50)
+                    startColor = 'rgba(255, 255, 255, 1)'
+                    endColor = 'rgba(0, 0, 0, 1)'
+                    gradient.addColorStop(0, startColor);
+                    gradient.addColorStop(segment.arcAngle / 720, `rgba(${lightnessBaseColor.r}, ${lightnessBaseColor.g}, ${lightnessBaseColor.b}, 1)`);
+                    gradient.addColorStop(segment.arcAngle / 360, endColor);
+                    gradient.addColorStop((segment.arcAngle + 20) / 360, endColor);
+                    gradient.addColorStop(1, startColor);
+                } else if (segment.type === 'alpha') {
+                    // 透明度环弧：从透明到基色的渐变
+                    startColor = `rgba(${currentColor.r}, ${currentColor.g}, ${currentColor.b}, 0)`
+                    endColor = `rgba(${currentColor.r}, ${currentColor.g}, ${currentColor.b}, 1)`
+                    gradient.addColorStop(0, startColor);
+                    gradient.addColorStop(segment.arcAngle / 360, endColor);
+                    gradient.addColorStop((segment.arcAngle + 20) / 360, endColor);
+                    gradient.addColorStop(1, startColor);
+                }
+
+                // 创建一个封闭的圆角环弧图形
+                const ringWidth = outerRadius - innerRadius;
+                const circleRadius = ringWidth / 2; // 圆的半径为环宽度的一半
+                const midRadius = innerRadius + circleRadius; // 圆心位于内外半径之间的中点
+
+                // 计算起始点和结束点的角度（弧度）
+                const startAngleRad = segment.startAngle * Math.PI / 180;
+                const endAngleRad = (segment.startAngle + segment.arcAngle) * Math.PI / 180;
+
+                // 计算起始点和结束点的圆心坐标
+                const startPointX = centerX + midRadius * Math.cos(startAngleRad);
+                const startPointY = centerY + midRadius * Math.sin(startAngleRad);
+                const endPointX = centerX + midRadius * Math.cos(endAngleRad);
+                const endPointY = centerY + midRadius * Math.sin(endAngleRad);
+
+                // 创建一个封闭的路径
+                ctx.beginPath();
+
+                // 1. 绘制外圆弧（顺时针方向）
+                ctx.arc(centerX, centerY, outerRadius, startAngleRad, endAngleRad);
+
+                // 2. 绘制结束点的圆角（连接外圆和内圆）
+                ctx.arc(endPointX, endPointY, circleRadius, endAngleRad, endAngleRad + Math.PI);
+
+                // 3. 绘制内圆弧（逆时针方向）
+                ctx.arc(centerX, centerY, innerRadius, endAngleRad, startAngleRad, true);
+
+                // 4. 绘制起始点的圆角（连接内圆和外圆）
+                ctx.arc(startPointX, startPointY, circleRadius, startAngleRad + Math.PI, startAngleRad);
+
+                // 封闭路径
+                ctx.closePath();
+
+                // 应用渐变和模糊效果并填充
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+            }
+        });
+
+        return {
+            canvas,
+            centerX: centerX / scale,
+            centerY: centerY / scale,
+            outerRadius: outerRadius / scale,
+            innerRadius: innerRadius / scale
+        };
+    }
+
+    // 创建颜色圆盘
+    function createColorWheel(element) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const size = Math.min(element.clientWidth, element.clientHeight);
+        const scale = 2;
+        canvas.width = size * scale;
+        canvas.height = size * scale;
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+        element.appendChild(canvas);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = canvas.width / 2 * 0.8; // 缩小色盘，为色相环留出空间
+
+        const imageData = ctx.createImageData(canvas.width, canvas.height);
+        const pixels = imageData.data;
+
+        for (let y = 0; y < canvas.height; y++) {
+            for (let x = 0; x < canvas.width; x++) {
+                const dx = x - centerX;
+                const dy = centerY - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= radius) {
+                    // 修正色相角度，使圆盘与滑块方向一致
+                    const angle = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360;
+                    const saturation = Math.min(100, (distance / radius) * 100);
+                    const lightness = 50;
+
+                    const rgb = ColorUtils.hslToRgb(angle, saturation, lightness);
+                    const index = (y * canvas.width + x) * 4;
+                    pixels[index] = rgb.r;
+                    pixels[index + 1] = rgb.g;
+                    pixels[index + 2] = rgb.b;
+                    pixels[index + 3] = 255;
+                }
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        ctx.filter = 'blur(1px)';
+        ctx.drawImage(canvas, 0, 0);
+        ctx.filter = 'none';
+
+        return {
+            canvas,
+            centerX: centerX / scale,
+            centerY: centerY / scale,
+            radius: radius / scale
+        };
+    }
+
+    // 颜色选择器主逻辑
+    document.addEventListener('DOMContentLoaded', () => {
+        const colorWheel = document.getElementById('color-wheel');
+        const wheelData = createColorWheel(colorWheel);
+        const wheelMarker = document.getElementById('wheel-marker');
+
+        const colorSelector = document.getElementById('color-selector');
+        // 初始化分段环弧
+        const ringContainer = document.getElementById('ring-container');
+        let ringData = null;
+
+        // DOM 元素
+        const hueValue = document.getElementById('hue-value');
+
+        const saturationMarker = document.getElementById('saturation-marker');
+        const lightnessMarker = document.getElementById('lightness-marker');
+        const alphaMarker = document.getElementById('alpha-marker');
+
+        const colorPreview = document.getElementById('color-preview');
+
+        const copyToast = document.getElementById('copy-toast');
+        const presetElements = document.querySelectorAll('.preset-color');
+        const colorFormatSelect = document.getElementById('color-format-select');
+        const colorValueInput = document.getElementById('color-value-input');
+        const copyColorBtn = document.getElementById('copy-color-btn');
+
+        // 当前颜色状态
+        // 同时保存RGB和HSL值，避免转换导致的精度损失
+        let currentColor = {
+            h: 240,    // 色相
+            s: 100,    // 饱和度
+            l: 50,     // 亮度
+            a: 100,    // 透明度
+            r: 0,      // 红色
+            g: 0,      // 绿色
+            b: 255     // 蓝色
+        };
+
+        // 初始颜色状态 - 用于恢复初始颜色
+        let initialColor = { ...currentColor };
+
+        // 初始颜色显示元素
+        const colorStart = document.getElementById('color-start');
+
+        // 预定义颜色表 - 仅支持字符串格式（HEX、RGB、RGBA、HSL、HSLA）
+        const presetColors = [
+            { value: '#FF0000', name: '红色' },             // HEX格式
+            { value: 'rgb(0, 255, 0)', name: '绿色' },       // RGB格式
+            { value: 'rgb(0, 0, 255)', name: '蓝色' }, // RGBA格式
+            { value: 'hsl(60, 100%, 50%)', name: '黄色' },   // HSL格式
+            { value: 'hsl(300, 100%, 50%)', name: '品红' }, // HSLA格式
+            { value: 'hsl(180, 100%, 50%)', name: '青色' },  // 改为HSL字符串格式
+            { value: 'hsl(45, 100%, 50%)', name: '橙色' },   // 改为HSL字符串格式
+            { value: 'hsl(90, 100%, 50%)', name: '黄绿色' }, // 改为HSL字符串格式
+            { value: 'hsl(270, 100%, 50%)', name: '紫色' }   // 改为HSL字符串格式
+        ];
+
+        // 更新预定义颜色表的UI - 仅支持字符串格式
+        const updatePresetColorsUI = () => {
+            presetElements.forEach((el, index) => {
+                if (index < presetColors.length) {
+                    const presetColor = presetColors[index];
+
+                    // 直接使用字符串格式的颜色值
+                    el.style.backgroundColor = presetColor.value;
+                    el.title = presetColor.name; // 添加颜色名称提示
+                    el.style.display = 'block';
+                } else {
+                    // 超出预定义颜色范围的元素隐藏
+                    el.style.display = 'none';
+                }
+            });
+        };
+
+        // 根据当前颜色创建亮度环 - 使用固定亮度值(50%)计算基色，确保亮度环基于色盘位置的颜色
+        const createRingWithCurrentColor = () => {
+            ringData = createRing(ringContainer, currentColor);
+        };
+
+        // 更新颜色显示
+        const updateColorDisplay = () => {
+            const { h, s, l, a, r, g, b } = currentColor;
+            const hex = ColorUtils.rgbToHex(r, g, b);
+
+            // 在rgba格式中，RGB值不应该带百分号
+            colorPreview.style.backgroundColor = `rgba(${r}, ${g}, ${b}, ${a / 100})`;
+
+            // 更新初始颜色显示
+            colorStart.style.backgroundColor = `rgba(${initialColor.r}, ${initialColor.g}, ${initialColor.b}, ${initialColor.a / 100})`;
+
+            // 根据当前选择的格式更新输入框
+            const format = colorFormatSelect.value;
+            switch (format) {
+                case 'hex':
+                    colorValueInput.value = hex;
+                    break;
+                case 'rgb':
+                    colorValueInput.value = `rgb(${r}, ${g}, ${b})`;
+                    break;
+                case 'rgba':
+                    colorValueInput.value = ColorUtils.rgbaToString(r, g, b, a);
+                    break;
+                case 'hsl':
+                    colorValueInput.value = `hsl(${h}, ${s}%, ${l}%)`;
+                    break;
+                case 'hsla':
+                    colorValueInput.value = ColorUtils.hslaToString(h, s, l, a);
+                    break;
+            }
+            createRingWithCurrentColor();
+            updateMarkerPositions();
+        };
+
+        // 更新标记位置
+        const updateMarkerPositions = () => {
+            const { h, s, l, a } = currentColor;
+
+            // 颜色圆盘标记
+            const pos = ColorUtils.hslToPosition(
+                h, s,
+                wheelData.centerX, wheelData.centerY,
+                wheelData.radius
+            );
+            wheelMarker.style.left = `${pos.x}px`;
+            wheelMarker.style.top = `${pos.y}px`;
+            wheelMarker.style.display = 'block';
+            const wheelRgb = ColorUtils.hslToRgb(h, s, 50); // 使用固定亮度值50%，与色盘一致
+            wheelMarker.style.backgroundColor = `rgb(${wheelRgb.r}, ${wheelRgb.g}, ${wheelRgb.b})`;
+
+            // 确保ringData已初始化
+            if (!ringData) return;
+
+            // 为每个分段环弧添加标记，确保位置计算基于容器
+            // 饱和度环弧标记 - 根据当前饱和度值计算角度位置
+            const saturationAngle = 160 + (100 - s);
+            const saturationDistanceFromCenter = (ringData.innerRadius + ringData.outerRadius) / 2;
+            const saturationPosX = ringData.centerX + Math.cos(saturationAngle * Math.PI / 180) * saturationDistanceFromCenter;
+            const saturationPosY = ringData.centerY + Math.sin(saturationAngle * Math.PI / 180) * saturationDistanceFromCenter;
+
+            saturationMarker.style.left = `${saturationPosX}px`;
+            saturationMarker.style.top = `${saturationPosY}px`;
+            saturationMarker.style.display = 'block';
+
+            // 亮度环弧标记 - 根据当前亮度值计算角度位置
+            // 注意：因为亮度弧跨越了360度边界（280度到20度），需要特殊处理角度计算
+            let lightnessAngle = 280 + (100 - l);
+            if (lightnessAngle > 360) {
+                lightnessAngle -= 360;
+            }
+            const lightnessDistanceFromCenter = (ringData.innerRadius + ringData.outerRadius) / 2;
+            const lightnessPosX = ringData.centerX + Math.cos(lightnessAngle * Math.PI / 180) * lightnessDistanceFromCenter;
+            const lightnessPosY = ringData.centerY + Math.sin(lightnessAngle * Math.PI / 180) * lightnessDistanceFromCenter;
+
+            lightnessMarker.style.left = `${lightnessPosX}px`;
+            lightnessMarker.style.top = `${lightnessPosY}px`;
+            lightnessMarker.style.display = 'block';
+
+            // 透明度环弧标记 - 根据当前透明度值计算角度位置
+            const alphaAngle = 40 + a;
+            const alphaDistanceFromCenter = (ringData.innerRadius + ringData.outerRadius) / 2;
+            const alphaPosX = ringData.centerX + Math.cos(alphaAngle * Math.PI / 180) * alphaDistanceFromCenter;
+            const alphaPosY = ringData.centerY + Math.sin(alphaAngle * Math.PI / 180) * alphaDistanceFromCenter;
+
+            alphaMarker.style.left = `${alphaPosX}px`;
+            alphaMarker.style.top = `${alphaPosY}px`;
+            alphaMarker.style.display = 'block';
+
+            // 为所有标记设置当前最终输出颜色
+            const rgb = ColorUtils.hslToRgb(h, s, l);
+            saturationMarker.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+            lightnessMarker.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+            alphaMarker.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        }
+
+        // 处理颜色圆盘交互
+        let isDraggingWheel = false;
+        let isDraggingRing = false;
+        let isSaturationLocked = false; // 添加锁定饱和度状态变量
+
+        // 为锁定饱和度图标添加点击事件
+        const saturationLockBtn = document.getElementById('lockSaturation');
+        if (saturationLockBtn) {
+            saturationLockBtn.addEventListener('click', () => {
+                isSaturationLocked = !isSaturationLocked;
+                const lockIcon = saturationLockBtn.querySelector('i');
+                lockIcon.className = isSaturationLocked ? 'fa fa-lock text-white' : 'fa fa-unlock text-white';
+                lockIcon.style.fontSize = '8px';
+            });
+        }
+
+        // 背景色切换功能
+        const bgColorSlider = document.getElementById('bgColorSlider');
+        const colorPickerContainer = document.getElementById('color-picker-container');
+
+        // 背景色选项
+        const bgColors = ['transparent', '#ffffff', '#808080', '#000000'];
+
+        // 更新背景色
+        const updateBackgroundColor = (index) => {
+            const bgColor = bgColors[index];
+            colorPickerContainer.style.backgroundColor = bgColor;
+        };
+
+        // 计算点击位置对应的索引
+        const getBgColorIndex = (clientY) => {
+            const rect = bgColorSlider.getBoundingClientRect();
+            const y = clientY - rect.top;
+            const relativeY = Math.max(0, Math.min(1, y / rect.height));
+            return Math.floor(relativeY * bgColors.length);
+        };
+
+        // 点击事件处理
+        bgColorSlider.addEventListener('click', (e) => {
+            const index = getBgColorIndex(e.clientY);
+            updateBackgroundColor(index);
+        });
+
+        // 触摸设备支持
+        bgColorSlider.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const index = getBgColorIndex(e.touches[0].clientY);
+                updateBackgroundColor(index);
+                e.preventDefault();
+            }
+        });
+
+        const handleWheelInteraction = (clientX, clientY) => {
+            const rect = wheelData.canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const hsl = ColorUtils.positionToHsl(
+                x, y,
+                wheelData.centerX, wheelData.centerY,
+                wheelData.radius
+            );
+
+            // 同时更新HSL和RGB值
+            const h = Math.round(hsl.h);
+            const s = Math.round(hsl.s);
+            const l = currentColor.l; // 保持当前亮度值
+            currentColor.h = h;
+            if (!isSaturationLocked) {
+                currentColor.s = s; // 只有在饱和度未锁定时才更新s值
+            }
+            // 从HSL转换为RGB并更新
+            const rgb = ColorUtils.hslToRgb(h, currentColor.s, l);
+            currentColor.r = rgb.r;
+            currentColor.g = rgb.g;
+            currentColor.b = rgb.b;
+
+            updateColorDisplay();
+        };
+
+        // 从亮度环位置计算亮度值 - 根据角度确定亮度值，连续渐变
+        const getLightnessFromRingPosition = (clientX, clientY) => {
+            const rect = ringData.canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const dx = x - ringData.centerX;
+            const dy = y - ringData.centerY;
+            // 计算角度（0-360度）
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+
+            // 根据角度确定亮度值，连续渐变（0%到100%）
+            const lightness = 100 - (angle / 360) * 100; // 亮度从100%到0%的连续变化
+
+            // 限制在0-100范围内并四舍五入到整数
+            return Math.round(Math.max(0, Math.min(100, lightness)));
+        }
+
+
+        // 从色盘位置检测是否在色彩区域内
+        const isPositionInColorWheel = (clientX, clientY) => {
+            const rect = wheelData.canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const dx = x - wheelData.centerX;
+            const dy = y - wheelData.centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // 检查是否在色盘半径范围内
+            return distance <= wheelData.radius * 1.1; // 添加一些容差范围
+        }
+
+        /**
+         * 处理颜色选择器的交互事件（同时支持鼠标和触摸）
+         * @param {Event} e - 事件对象
+         * @param {boolean} isTouch - 是否为触摸事件
+         */
+        function handleColorSelectorInteraction(e, isTouch) {
+            let clientX, clientY;
+
+            if (isTouch) {
+                if (e.touches.length === 0) return;
+                const touch = e.touches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // 只有当鼠标按下位置在色盘色彩区域内时，才触发交互
+            if (isPositionInColorWheel(clientX, clientY)) {
+                isDraggingWheel = true;
+                handleWheelInteraction(clientX, clientY);
+                e.preventDefault();
+                e.stopPropagation();
+            } else {
+                // 分段环弧交互
+                const rect = ringData.canvas.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+
+                if (handleRingInteraction(x, y)) {
+                    e.preventDefault();
+                    e.stopPropagation(); // 阻止事件冒泡到色盘
+                }
+            }
+        }
+
+        // 同时注册鼠标和触摸事件
+        colorSelector.addEventListener('mousedown', (e) => handleColorSelectorInteraction(e, false));
+        colorSelector.addEventListener('touchstart', (e) => handleColorSelectorInteraction(e, true));
+
+        const updateColorByRingPostion = (x, y, currentDraggingSegmentType) => {
+
+            // 根据鼠标按下时确定的环弧类型和当前角度计算值
+            const value = getValueFromSegmentPosition(x, y, currentDraggingSegmentType);
+            if (value !== null) {
+                // 获取当前颜色的HSL值
+                const { h, s, l } = currentColor;
+
+                if (currentDraggingSegmentType === 'saturation') {
+                    currentColor.s = value;
+                    // 更新RGB值
+                    const rgb = ColorUtils.hslToRgb(h, value, l);
+                    currentColor.r = rgb.r;
+                    currentColor.g = rgb.g;
+                    currentColor.b = rgb.b;
+                } else if (currentDraggingSegmentType === 'lightness') {
+                    currentColor.l = value;
+                    // 更新RGB值
+                    const rgb = ColorUtils.hslToRgb(h, s, value);
+                    currentColor.r = rgb.r;
+                    currentColor.g = rgb.g;
+                    currentColor.b = rgb.b;
+                } else if (currentDraggingSegmentType === 'alpha') {
+                    currentColor.a = value;
+                    // 透明度不影响RGB值
+                }
+                updateColorDisplay();
+            }
+        }
+        /**
+         * 统一处理色盘选择器的移动事件（鼠标和触摸）
+         * @param {Event} e - 事件对象
+         * @param {boolean} isTouch - 是否为触摸事件
+         */
+        const handleColorSelectorMove = (e, isTouch) => {
+
+            // 根据事件类型获取坐标
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            if (isDraggingWheel) {
+                // 处理色盘交互
+                handleWheelInteraction(clientX, clientY);
+                e.preventDefault();
+                e.stopPropagation();
+            } else if (isDraggingRing && currentDraggingSegmentType) {
+                // 处理分段环弧交互
+                const rect = ringData.canvas.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                updateColorByRingPostion(x, y, currentDraggingSegmentType);
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        // 注册鼠标移动事件
+        document.addEventListener('mousemove', (e) => handleColorSelectorMove(e, false));
+        document.addEventListener('touchmove', (e) => handleColorSelectorMove(e, true));
+
+        // 鼠标释放事件
+        /**
+         * 统一处理鼠标/触摸释放事件，重置拖拽状态
+         */
+        const handleColorSelectorRelease = () => {
+            isDraggingWheel = false;
+            isDraggingRing = false;
+            currentDraggingSegmentType = null;
+        };
+        
+        // 注册释放事件
+        document.addEventListener('mouseup', handleColorSelectorRelease);
+        document.addEventListener('touchend', handleColorSelectorRelease);
+
+        // 定义三个分段环弧的起始角度和占用角度
+        const segments = [
+            { startAngle: 160, arcAngle: 100, type: 'saturation' },  // 160度到260度
+            { startAngle: 280, arcAngle: 100, type: 'lightness' },   // -80度到20度（280度到380度，即280度到20度）
+            { startAngle: 40, arcAngle: 100, type: 'alpha' }         // 40度到140度
+        ];
+
+        // 检查点击位置是否在某个环弧上，并返回对应的环弧类型
+        const getSegmentTypeAtPosition = (x, y) => {
+            const centerX = ringData.centerX;
+            const centerY = ringData.centerY;
+            const dx = x - centerX;
+            const dy = y - centerY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // 检查是否在环的宽度范围内
+            if (distance < ringData.innerRadius * 0.9 || distance > ringData.outerRadius * 1.1) {
+                return null;
+            }
+
+            // 计算点击位置的角度
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+
+            // 检查点击位置属于哪个环弧
+            for (const segment of segments) {
+                const endAngle = segment.startAngle + segment.arcAngle;
+
+                // 处理跨越360度边界的情况
+                if (endAngle > 360) {
+                    // 对于跨越360度边界的环弧（如亮度弧：280度到380度即280度到20度）
+                    if ((angle >= segment.startAngle - 5 && angle <= 360) || (angle >= 0 && angle <= endAngle - 360 + 5)) {
+                        return segment.type;
+                    }
+                } else {
+                    // 普通环弧（不跨越360度边界）
+                    if (angle >= segment.startAngle - 5 && angle <= endAngle + 5) {
+                        return segment.type;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        // 从环弧位置计算对应的值
+        const getValueFromSegmentPosition = (x, y, segmentType) => {
+            const centerX = ringData.centerX;
+            const centerY = ringData.centerY;
+            const dx = x - centerX;
+            const dy = y - centerY;
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            if (angle < 0) angle += 360;
+
+            // 根据不同的环弧类型计算值
+            for (const segment of segments) {
+                if (segment.type === segmentType) {
+                    // 计算在当前环弧中的相对位置
+                    let relativePosition;
+                    const endAngle = segment.startAngle + segment.arcAngle;
+
+                    // 处理跨越360度边界的情况
+                    if (endAngle > 360) {
+                        if (angle >= segment.startAngle) {
+                            // 角度在起始角度到360度之间
+                            relativePosition = (angle - segment.startAngle) / segment.arcAngle;
+                        } else {
+                            // 角度在0度到结束角度减去360度之间
+                            if (angle < segment.startAngle && angle <= 180) {
+                                angle += 360;
+                            }
+                            relativePosition = (angle - segment.startAngle) / segment.arcAngle;
+                        }
+                    } else {
+                        // 普通环弧（不跨越360度边界）
+                        ag = angle - segment.startAngle
+                        if (ag > 280) { //超过半个圆设为反方向
+                            ag -= 360
+                        }
+                        relativePosition = ag / segment.arcAngle;
+                    }
+                    // 确保相对位置在0-1范围内
+                    const clampedPosition = Math.max(0, Math.min(1, relativePosition));
+
+                    // 根据环弧类型返回不同的值
+                    if (segmentType === 'saturation') {
+                        return Math.round((1 - clampedPosition) * 100); // 饱和度从100%到0%
+                    } else if (segmentType === 'lightness') {
+                        return Math.round((1 - clampedPosition) * 100); // 亮度从100%到0%
+                    } else if (segmentType === 'alpha') {
+                        return Math.round(clampedPosition * 100); // 透明度从0%到100%
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        // 保存当前拖动的环弧类型
+        let currentDraggingSegmentType = null;
+
+        /**
+         * 处理环弧交互的函数
+         * @param {number} x - 相对于canvas的x坐标
+         * @param {number} y - 相对于canvas的y坐标
+         * @returns {boolean} - 是否处理了交互
+         */
+        function handleRingInteraction(x, y) {
+            // 检查点击位置属于哪个环弧
+            const segmentType = getSegmentTypeAtPosition(x, y);
+
+            if (segmentType) {
+                isDraggingRing = true;
+                currentDraggingSegmentType = segmentType;
+                updateColorByRingPostion(x, y, segmentType);
+                return true;
+            }
+            return false;
+        }
+
+
+        // 颜色格式选择器事件
+        colorFormatSelect.addEventListener('change', () => {
+            updateColorDisplay();
+        });
+
+        // 处理颜色值输入的函数
+        function processColorInput(value) {
+            // 复用colorStringToObject函数解析所有格式的颜色值
+            const parsedColor = ColorUtils.colorStringToObject(value);
+
+            if (parsedColor) {
+                // 更新currentColor的所有属性
+                currentColor.h = parsedColor.h;
+                currentColor.s = parsedColor.s;
+                currentColor.l = parsedColor.l;
+                currentColor.r = parsedColor.r;
+                currentColor.g = parsedColor.g;
+                currentColor.b = parsedColor.b;
+                currentColor.a = parsedColor.a || 100;
+
+                updateColorDisplay();
+            } else {
+                // 如果输入无效，重置显示
+                updateColorDisplay();
+            }
+        }
+
+        // 新的颜色值输入框事件处理 - 失去焦点时
+        colorValueInput.addEventListener('blur', (e) => {
+            processColorInput(e.target.value);
+        });
+
+        // 新的颜色值输入框事件处理 - 按下回车键时
+        colorValueInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                processColorInput(e.target.value);
+                // 阻止默认行为，避免回车键在某些情况下可能导致的表单提交
+                e.preventDefault();
+            }
+        });
+
+        // 复制按钮功能
+        copyColorBtn.addEventListener('click', () => {
+            colorValueInput.select();
+            document.execCommand('copy');
+
+            copyToast.style.opacity = '1';
+            setTimeout(() => {
+                copyToast.style.opacity = '0';
+            }, 2000);
+        });
+
+        // 预定义颜色点击事件 - 仅支持字符串格式
+        presetElements.forEach((colorEl, index) => {
+            colorEl.addEventListener('click', () => {
+                if (index < presetColors.length) {
+                    const presetColor = presetColors[index];
+
+                    // 解析字符串格式的颜色值
+                    const parsedColor = ColorUtils.colorStringToObject(presetColor.value);
+                    if (parsedColor) {
+                        // 更新currentColor的所有属性
+                        currentColor.h = parsedColor.h;
+                        currentColor.s = parsedColor.s;
+                        currentColor.l = parsedColor.l;
+                        currentColor.r = parsedColor.r;
+                        currentColor.g = parsedColor.g;
+                        currentColor.b = parsedColor.b;
+                        currentColor.a = parsedColor.a || 100;
+                    }
+
+                    updateColorDisplay();
+                }
+            });
+        });
+
+        // 点击恢复初始颜色
+        colorStart.addEventListener('click', () => {
+            // 复制初始颜色到当前颜色
+            currentColor = { ...initialColor };
+            // 更新显示
+            updateColorDisplay();
+        });
+
+        // 收藏颜色功能实现
+        // 1. 初始化收藏颜色数组，存储HEX格式的颜色值
+        const favoriteColors = [];
+        const STORAGE_KEY = 'colorPickerFavoriteColors';
+
+        // 从localStorage加载收藏颜色
+        function loadFavoriteColorsFromStorage() {
+            try {
+                const storedColors = localStorage.getItem(STORAGE_KEY);
+                if (storedColors) {
+                    const parsedColors = JSON.parse(storedColors);
+                    for (let i = 0; i < 10; i++) {
+                        favoriteColors[i] = parsedColors[i] || null;
+                    }
+                } else {
+                    // 首次使用，初始化为空
+                    for (let i = 0; i < 10; i++) {
+                        favoriteColors[i] = null;
+                    }
+                }
+            } catch (error) {
+                console.error('加载收藏颜色失败:', error);
+                // 出错时全部初始化为空
+                for (let i = 0; i < 10; i++) {
+                    favoriteColors[i] = null;
+                }
+            }
+        }
+
+        // 保存收藏颜色到localStorage
+        function saveFavoriteColorsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(favoriteColors));
+            } catch (error) {
+                console.error('保存收藏颜色失败:', error);
+            }
+        }
+
+        // 2. 获取所有收藏颜色元素
+        const favColorElements = document.querySelectorAll('.fav-color');
+
+        // 3. 更新收藏颜色UI显示
+        function updateFavoriteColorsUI() {
+            favColorElements.forEach((el, index) => {
+                if (!el) return;
+
+                // 清空元素内的内容
+                el.innerHTML = '';
+                el.className = '';
+
+                if (favoriteColors[index]) {
+                    // 有收藏色的样式
+                    el.className = 'fav-color filled';
+                    el.style.backgroundColor = favoriteColors[index];
+                    el.title = '右键或拖出删除';
+
+                    // 启用拖出删除功能
+                    el.draggable = true;
+                } else {
+                    // 无收藏色的样式
+                    el.className = 'fav-color notfill';
+                    el.style.backgroundColor = '';
+                    el.title = '点击添加当前颜色';
+
+                    // 添加加号图标
+                    const plusIcon = document.createElement('i');
+                    plusIcon.className = 'fa fa-plus';
+                    el.appendChild(plusIcon);
+
+                    // 禁用拖出功能
+                    el.draggable = false;
+                }
+            });
+        }
+
+        // 4. 为收藏颜色元素添加点击事件
+        favColorElements.forEach((el, index) => {
+            if (!el) return;
+
+            const elementClick = (index) => {
+                if (favoriteColors[index]) {
+                    // 点击有收藏色的收藏位，应用该颜色
+                    const parsedColor = ColorUtils.colorStringToObject(favoriteColors[index]);
+                    if (parsedColor) {
+                        // 更新currentColor的所有属性
+                        currentColor.h = parsedColor.h;
+                        currentColor.s = parsedColor.s;
+                        currentColor.l = parsedColor.l;
+                        currentColor.r = parsedColor.r;
+                        currentColor.g = parsedColor.g;
+                        currentColor.b = parsedColor.b;
+                        currentColor.a = parsedColor.a || 100;
+
+                        // 更新所有UI显示
+                        updateColorDisplay();
+                    }
+                } else {
+                    // 点击空白收藏位，将当前颜色添加到该收藏位
+                    // 保存为rgba格式
+                    const currentRgba = ColorUtils.rgbaToString(currentColor.r, currentColor.g, currentColor.b, currentColor.a || 100);
+                    favoriteColors[index] = currentRgba;
+                    updateFavoriteColorsUI();
+                    saveFavoriteColorsToStorage(); // 保存到本地存储
+                }
+            };
+            el.addEventListener('click', () => {
+                elementClick(index);
+            });
+
+            // 5. 添加右键点击删除功能
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // 阻止默认右键菜单
+                if (favoriteColors[index]) {
+                    favoriteColors[index] = null;
+                    updateFavoriteColorsUI();
+                    saveFavoriteColorsToStorage(); // 保存到本地存储
+                }
+            });
+
+            // 6. 添加拖出删除功能 - 桌面拖拽
+            el.addEventListener('dragstart', (e) => {
+                if (favoriteColors[index]) {
+                    e.dataTransfer.setData('text/plain', index.toString());
+                    // 设置拖拽时的透明度，提供视觉反馈
+                    el.style.opacity = '0.5';
+                }
+            });
+
+            el.addEventListener('dragend', () => {
+                // 恢复元素透明度
+                el.style.opacity = '1';
+            });
+
+            // 7. 添加触摸设备拖出删除功能
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isDragging = false;
+            const DRAG_THRESHOLD = 50; // 拖出阈值
+            let draggedColorIndex = null;
+
+            el.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (favoriteColors[index]) {
+                    const touch = e.touches[0];
+                    touchStartX = touch.clientX;
+                    touchStartY = touch.clientY;
+                    isDragging = false;
+                    draggedColorIndex = index;
+                    // 记录当前元素的初始位置
+                    el.dataset.originalTransform = el.style.transform || '';
+                } else {
+                    elementClick(index);
+                }
+            });
+
+            el.addEventListener('touchmove', (e) => {
+                if (draggedColorIndex !== null && favoriteColors[draggedColorIndex]) {
+                    const touch = e.touches[0];
+                    const dx = touch.clientX - touchStartX;
+                    const dy = touch.clientY - touchStartY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > 10) {
+                        isDragging = true;
+                        // 防止页面滚动
+                        e.preventDefault();
+                        // 跟随手指移动元素
+                        el.style.transform = `translate(${dx}px, ${dy}px)`;
+                        // 提供视觉反馈
+                        el.style.opacity = '0.5';
+                        el.style.zIndex = '100'; // 确保在最上层
+                    }
+                }
+            });
+
+            el.addEventListener('touchend', (e) => {
+                if (draggedColorIndex !== null && favoriteColors[draggedColorIndex]) {
+                    const touch = e.changedTouches[0];
+                    const dx = touch.clientX - touchStartX;
+                    const dy = touch.clientY - touchStartY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // 恢复元素样式
+                    el.style.transform = el.dataset.originalTransform;
+                    el.style.opacity = '1';
+                    el.style.zIndex = '';
+
+                    // 如果拖动距离超过阈值，视为拖出删除
+                    if (isDragging && distance > DRAG_THRESHOLD) {
+                        favoriteColors[draggedColorIndex] = null;
+                        updateFavoriteColorsUI();
+                        saveFavoriteColorsToStorage(); // 保存到本地存储
+                    } else {
+                        elementClick(draggedColorIndex);
+                    }
+
+                    // 重置状态
+                    isDragging = false;
+                    draggedColorIndex = null;
+                }
+            });
+        });
+
+        // 8. 添加文档拖拽事件，实现拖出删除（桌面端）
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault(); // 允许放置
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const colorIndex = e.dataTransfer.getData('text/plain');
+            if (colorIndex !== '' && !isNaN(parseInt(colorIndex))) {
+                // 从收藏位置删除颜色
+                favoriteColors[parseInt(colorIndex)] = null;
+                updateFavoriteColorsUI();
+                saveFavoriteColorsToStorage(); // 保存到本地存储
+            }
+        });
+        // 初始化环
+        createRingWithCurrentColor();
+        // 初始设置为透明背景
+        updateBackgroundColor(0);
+        // 初始化预定义色
+        updatePresetColorsUI();
+        updateColorDisplay();
+        // 初始化收藏颜色UI
+        loadFavoriteColorsFromStorage(); // 先从localStorage加载
+        updateFavoriteColorsUI();
+    });
+</script>
+
+</html>
