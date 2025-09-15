@@ -458,13 +458,37 @@
                             d="M515.84 296.827C508.136 296.827 501.891 303.057 501.891 310.743 501.891 318.429 508.136 324.66 515.84 324.66 523.544 324.66 529.789 318.429 529.789 310.743 529.789 303.057 523.544 296.827 515.84 296.827ZM532.288 224.029C515.877 224.029 502.574 237.301 502.574 253.673 502.574 270.045 515.877 283.317 532.288 283.317 548.698 283.317 562.001 270.045 562.001 253.673 562.001 237.301 548.698 224.029 532.288 224.029ZM494 216 570 216 570 332 494 332Z"
                             fill-rule="evenodd" clip-rule="evenodd" />
                     </clipPath>
+                    <!-- 金属质感渐变定义 -->
+                    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#f0f0f0" />
+                        <stop offset="20%" stop-color="#e0e0e0" />
+                        <stop offset="45%" stop-color="#a0a0a0" />
+                        <stop offset="55%" stop-color="#808080" />
+                        <stop offset="80%" stop-color="#c0c0c0" />
+                        <stop offset="100%" stop-color="#e0e0e0" />
+                    </linearGradient>
+                    <!-- 金属高光渐变 -->
+                    <linearGradient id="metalHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="rgba(255,255,255,0)" />
+                        <stop offset="30%" stop-color="rgba(255,255,255,0.3)" />
+                        <stop offset="40%" stop-color="rgba(255,255,255,0.2)" />
+                        <stop offset="60%" stop-color="rgba(255,255,255,0.1)" />
+                        <stop offset="100%" stop-color="rgba(255,255,255,0)" />
+                    </linearGradient>
                 </defs>
                 <g transform="translate(-494 -216)">
                     <g clip-path="url(#clip0)">
+                        <!-- 金属基底 -->
                         <path
                             d="M551.529 227.764C571.82 227.764 588.268 244.212 588.268 264.501 588.268 277.182 581.843 288.362 572.07 294.964L568.627 296.834 563.718 298.844C560.513 300.874 557.607 304.319 555.755 308.702 553.903 313.082 553.462 317.571 554.241 321.284L554.32 322.906 554.253 325.767C552.441 334.624 544.602 341.291 535.207 341.291 524.468 341.291 515.765 332.585 515.765 321.849 515.765 319.163 516.309 316.604 517.294 314.278L518.197 312.94 519.333 311.581C521.973 308.856 523.991 304.826 524.764 300.133 525.924 293.094 523.746 288.052 520.142 283.288L517.68 278.801C515.819 274.406 514.792 269.573 514.792 264.501 514.792 244.212 531.241 227.764 551.529 227.764Z"
-                            fill="#344479"
+                            fill="url(#metalGradient)"
                             stroke="rgba(0,0,0, 0.5)" stroke-width="2.07682" stroke-miterlimit="8" fill-rule="evenodd"
+                            transform="matrix(1.00234 0 0 1 -20.741 -10.5625)" />
+                        <!-- 金属光泽 -->
+                        <path
+                            d="M551.529 227.764C571.82 227.764 588.268 244.212 588.268 264.501 588.268 277.182 581.843 288.362 572.07 294.964L568.627 296.834 563.718 298.844C560.513 300.874 557.607 304.319 555.755 308.702 553.903 313.082 553.462 317.571 554.241 321.284L554.32 322.906 554.253 325.767C552.441 334.624 544.602 341.291 535.207 341.291 524.468 341.291 515.765 332.585 515.765 321.849 515.765 319.163 516.309 316.604 517.294 314.278L518.197 312.94 519.333 311.581C521.973 308.856 523.991 304.826 524.764 300.133 525.924 293.094 523.746 288.052 520.142 283.288L517.68 278.801C515.819 274.406 514.792 269.573 514.792 264.501 514.792 244.212 531.241 227.764 551.529 227.764Z"
+                            fill="url(#metalHighlight)"
+                            fill-rule="evenodd"
                             transform="matrix(1.00234 0 0 1 -20.741 -10.5625)" />
                     </g>
                 </g>
@@ -821,7 +845,8 @@
         },
 
         // 从HSL计算圆盘位置
-        hslToPosition: (h, s, centerX, centerY, radius) => {
+        // l参数当前未使用，仅为保持函数名与参数的一致性及未来扩展
+        hslToPosition: (h, s, l, centerX, centerY, radius) => {
             const radians = h * Math.PI / 180;
             const distance = (s / 100) * radius;
 
@@ -986,12 +1011,10 @@
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance <= radius) {
-                    // 修正色相角度，使圆盘与滑块方向一致
-                    const angle = (Math.atan2(-dy, dx) * 180 / Math.PI + 360) % 360;
-                    const saturation = Math.min(100, (distance / radius) * 100);
-                    const lightness = 50;
+                    // 复用positionToHsl函数计算HSL颜色值
+                    const hsl = ColorUtils.positionToHsl(x, y, centerX, centerY, radius);
 
-                    const rgb = ColorUtils.hslToRgb(angle, saturation, lightness);
+                    const rgb = ColorUtils.hslToRgb(hsl.h, hsl.s, hsl.l);
                     const index = (y * canvas.width + x) * 4;
                     pixels[index] = rgb.r;
                     pixels[index + 1] = rgb.g;
@@ -1133,7 +1156,7 @@
 
             // 颜色圆盘标记
             const pos = ColorUtils.hslToPosition(
-                h, s,
+                h, s, l,
                 wheelData.centerX, wheelData.centerY,
                 wheelData.radius
             );
