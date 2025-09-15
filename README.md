@@ -30,7 +30,7 @@
 - `LICENSE`：许可证文件
 
 ## 技术实现
-采用HTML5、JavaScript、Tailwind CSS和Font Awesome构建，支持Chrome、Firefox、Safari和Edge等现代浏览器。
+采用HTML5、JavaScript、Font Awesome构建，支持Chrome、Firefox、Safari和Edge等现代浏览器。
 
 欢迎开发者基于此HTML实现，改造成各种前端组件库的版本（如React、Vue、Angular等）。
 
