@@ -4,12 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chroma Wheel Color Picker - Vue3 组件示例</title>
-  <!-- 引入 Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <!-- 引入 Vue 3 -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- 引入 vue3-sfc-loader -->
-  <script src="https://cdn.jsdelivr.net/npm/vue3-sfc-loader@0.8.4/dist/vue3-sfc-loader.min.js"></script>
+  <script src="https://unpkg.com/vue3-sfc-loader"></script>
   
   <style>
     /* 全局样式重置 */
@@ -27,11 +25,11 @@
       justify-content: center;
       align-items: center;
     }
-
     /* 主容器样式 */
     .main-container {
       position: relative;
       background: #374151;
+      --chromawheel-bg-color: #374151;
       backdrop-filter: blur(10px);
       border-radius: 10px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);

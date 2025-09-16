@@ -1424,7 +1424,7 @@
 
         // 注册鼠标移动事件
         document.addEventListener('mousemove', (e) => handleColorSelectorMove(e, false));
-        document.addEventListener('touchmove', (e) => handleColorSelectorMove(e, true));
+        document.addEventListener('touchmove', (e) => handleColorSelectorMove(e, true), { passive: false });
 
         // 鼠标释放事件
         /**
@@ -1798,7 +1798,7 @@
                 } else {
                     elementClick(index);
                 }
-            });
+            },{ passive: false });
 
             el.addEventListener('touchmove', (e) => {
                 if (draggedColorIndex !== null && favoriteColors[draggedColorIndex]) {
@@ -1818,7 +1818,7 @@
                         el.style.zIndex = '100'; // 确保在最上层
                     }
                 }
-            });
+            },{ passive: false });
 
             el.addEventListener('touchend', (e) => {
                 if (draggedColorIndex !== null && favoriteColors[draggedColorIndex]) {
