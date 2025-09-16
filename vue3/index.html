@@ -35,6 +35,23 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       padding: 5px;
     }
+    
+    /* v-model显示区域样式 */
+    .v-model-display {
+      margin: 10px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      text-align: center;
+    }
+       
+    .v-model-display code {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+      color: #f0f0f0;
+    }
 
     /* 标题栏样式 */
     .title-bar {
@@ -60,9 +77,11 @@
     
     <!-- Vue 组件将在这里渲染 -->
     <div id="app">
-      <chroma-wheel :initial-color="initialColor" @color-change="handleColorChange"></chroma-wheel>
+      <chroma-wheel v-model="modelColor"></chroma-wheel>
+      <div class="v-model-display" :style="{ backgroundColor: modelColor }">
+        <code>v-mdoel:{{ modelColor }}</code>
+      </div>
     </div>
-
 
   </div>
 
@@ -75,32 +94,8 @@
     const app = createApp({
       data() {
         return {
-          // 初始颜色设置
-          initialColor: {
-            h: 240,
-            s: 100,
-            l: 50,
-            a: 100,
-            r: 0,
-            g: 0,
-            b: 255
-          },
-          // 当前颜色值
-          currentColor: {
-            h: 240,
-            s: 100,
-            l: 50,
-            a: 100,
-            r: 0,
-            g: 0,
-            b: 255
-          }
-        }
-      },
-      methods: {
-        // 处理颜色变化事件
-        handleColorChange(color) {
-          this.currentColor = { ...color };
+          // 使用v-model绑定的颜色字符串
+          modelColor: 'rgb(0, 255, 255)'
         }
       }
     });
