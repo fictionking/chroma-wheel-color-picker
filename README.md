@@ -24,10 +24,16 @@
 5. 点击空白收藏位保存颜色，点击已收藏颜色应用，右键或拖出删除
 
 ## 项目组成
-- `ChromaWheel.html`：主文件，包含完整代码
+- `ChromaWheel.html`：纯html实现
 - `demo.jpg`：演示图片
 - `README.md`：项目说明
 - `LICENSE`：许可证文件
+- `vue3/`：Vue3组件实现
+
+## 前端组件清单
+- Vue3：已实现
+- React：未实现
+- Angular：未实现
 
 ## 技术实现
 采用HTML5、JavaScript、Font Awesome构建，支持Chrome、Firefox、Safari和Edge等现代浏览器。
@@ -65,10 +71,16 @@ You can experience ChromaWheel Color Picker online through the following link:
 5. Save colors by clicking empty favorite slots, apply by clicking filled slots, delete with right-click or drag
 
 ## Project Contents
-- `ChromaWheel.html`: Main file with complete code
+- `ChromaWheel.html`: Pure HTML implementation
 - `demo.jpg`: Demo image
 - `README.md`: Project documentation
 - `LICENSE`: License file
+- `vue3/`: Vue3 component implementation
+
+## Frontend Component List
+- Vue3: Implemented
+- React: Not implemented
+- Angular: Not implemented
 
 ## Technology
 Built with HTML5, JavaScript, Tailwind CSS and Font Awesome, compatible with modern browsers like Chrome, Firefox, Safari and Edge.
