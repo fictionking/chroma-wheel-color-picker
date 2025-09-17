@@ -4,48 +4,33 @@
             <!-- 网格背景 - 应用于整个颜色选择器 -->
             <div class="grid-background"></div>
             <!-- 颜色选择区域 - 亮度环和色盘叠放 -->
-            <div id="color-selector" class="color-selector" ref="colorSelector">
+            <div class="color-selector" ref="colorSelector">
                 <!-- 分段环弧容器 - 位于底层 -->
-                <div id="ring-container" class="ring-container" ref="ringContainer">
+                <div class="ring-container" ref="ringContainer">
                     <!-- 分段环弧将通过JS生成 -->
                     <!-- 饱和度环弧标记 -->
-                    <div id="saturation-marker" class="ring-marker" title="饱和度" ref="saturationMarker"></div>
+                    <div class="ring-marker" title="饱和度" ref="saturationMarker"></div>
                     <!-- 亮度环弧标记 -->
-                    <div id="lightness-marker" class="ring-marker" title="亮度" ref="lightnessMarker"></div>
+                    <div class="ring-marker" title="亮度" ref="lightnessMarker"></div>
                     <!-- 透明度环弧标记 -->
-                    <div id="alpha-marker" class="ring-marker" title="透明度" ref="alphaMarker"></div>
+                    <div class="ring-marker" title="透明度" ref="alphaMarker"></div>
                 </div>
                 <!-- 彩色圆盘 - 位于上层 -->
-                <div id="color-wheel" class="color-wheel" ref="colorWheel">
+                <div class="color-wheel" ref="colorWheel">
                     <!-- 颜色圆盘将通过JS生成 -->
                     <!-- 颜色圆盘标记 -->
-                    <div id="wheel-marker" class="wheel-marker" title="色相" ref="wheelMarker"></div>
+                    <div class="wheel-marker" title="色相" ref="wheelMarker"></div>
                 </div>
             </div>
             <!-- 圆形颜色预览 - 位于左上角 -->
-            <div id="color-preview" class="color-preview" :style="{ backgroundColor: previewColor }"></div>
+            <div class="color-preview" :style="{ backgroundColor: previewColor }"></div>
             <!-- 圆形初始颜色 - 位于左上角 -->
-            <div id="color-start" class="color-start" :style="{ backgroundColor: initialColorStyle }"
+            <div class="color-start" :style="{ backgroundColor: initialColorStyle }"
                 @click="resetToInitialColor"></div>
-            <svg style="z-index: 11;position:absolute;left: -2px;top: -1px;filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));pointer-events: none;" 
-                width="83.6"
-                height="123.5" viewBox="0 0 83.6 123.5" fill="none">
-                    <path
-                        d="M41.823 5C62.1614 5 78.6479 21.448 78.6479 41.737C78.6479 54.418 72.2079 65.598 62.412 72.2L58.961 74.07L54.0405 76.08C50.828 78.11 47.9152 81.555 46.0588 85.938C44.2025 90.318 43.7605 94.807 44.5413 98.52L44.6205 100.142L44.5533 103.003C42.7371 111.86 34.8798 118.527 25.4628 118.527C14.6987 118.527 5.9753 109.821 5.9753 99.085C5.9753 96.399 6.52058 93.84 7.50786 91.514L8.413 90.176L9.55165 88.817C12.1978 86.092 14.2206 82.062 14.9953 77.369C16.158 70.33 13.9749 65.288 10.3626 60.524L7.89476 56.037C6.02938 51.642 5 46.809 5 41.737C5 21.448 21.4875 5 41.823 5ZM42.0324 11.8275C25.6214 11.8275 12.3184 25.0995 12.3184 41.4715C12.3184 57.8435 25.6214 71.1155 42.0324 71.1155C58.4424 71.1155 71.7454 57.8435 71.7454 41.4715C71.7454 25.0995 58.4424 11.8275 42.0324 11.8275ZM25.5844 84.6255C17.8804 84.6255 11.6354 90.8555 11.6354 98.5415C11.6354 106.228 17.8804 112.459 25.5844 112.459C33.2884 112.459 39.5334 106.228 39.5334 98.5415C39.5334 90.8555 33.2884 84.6255 25.5844 84.6255Z"
-                        stroke="rgba(100, 100, 100, 1)" stroke-width="2" fill-rule="evenodd"
-                        fill="url(#linear_fill_0_8)"></path>
-                <defs>
-                    <linearGradient id="linear_fill_0_8" x1="-1.0936279296875" y1="32.566619873046875"
-                        x2="78.64790344238281" y2="79.79045104980469" gradientUnits="userSpaceOnUse">
-                        <stop offset="0" stop-color="#CCCCCC" />
-                        <stop offset="0.2838" stop-color="#F2F2F2" stop-opacity="1" />
-                        <stop offset="0.5698" stop-color="#393939" stop-opacity="1" />
-                        <stop offset="0.8342" stop-color="#A6A6A6" stop-opacity="1" />
-                        <stop offset="1" stop-color="#E0E0E0" />
-                    </linearGradient>
-                </defs>
-            </svg>
-
+            <PreviewDecoration
+                style="z-index: 11;position:absolute;left: -2px;top: -1px;filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));pointer-events: none;"
+                width="83.6" height="123.5">
+            </PreviewDecoration>
             <!-- 预定义颜色 - 右上角 -->
             <div class="preset-color teardrop-right-bottom" style="right:40px;top:5px;"
                 :style="{ backgroundColor: presetColors[0].value }" @click="selectPresetColor(0)"></div>
@@ -98,7 +83,7 @@
                 </div>
             </div>
 
-            <div id="lockSaturation" title="锁定饱和度" class="lock-saturation" @click="toggleSaturationLock">
+            <div title="锁定饱和度" class="lock-saturation" @click="toggleSaturationLock">
                 <svg v-if="isSaturationLocked" width="8px" height="8px" viewBox="0 0 384 512" style="color: white;">
                     <path fill="currentColor"
                         d="M128 96l0 64 128 0 0-64c0-35.3-28.7-64-64-64s-64 28.7-64 64zM64 160l0-64C64 25.3 121.3-32 192-32S320 25.3 320 96l0 64c35.3 0 64 28.7 64 64l0 224c0 35.3-28.7 64-64 64L64 512c-35.3 0-64-28.7-64-64L0 224c0-35.3 28.7-64 64-64z" />
@@ -109,13 +94,14 @@
                 </svg>
             </div>
             <!-- 背景色切换区域 -->
-            <div id="bgColorSlider" class="bg-color-slider" @click="handleBgColorClick"
+            <div class="bg-color-slider"
+                style="position: absolute;height: 64px;width: 16px;top: 140px;left: 10px;" @click="handleBgColorClick"
                 @touchstart.prevent="handleBgColorTouchStart"></div>
         </div>
         <!-- 颜色输入区 -->
         <div class="color-input-section">
             <div class="input-container">
-                <select id="color-format-select" class="color-format-select" v-model="colorFormat"
+                <select class="color-format-select" v-model="colorFormat"
                     @change="handleColorFormatChange">
                     <option value="hex">HEX</option>
                     <option value="rgb">RGB</option>
@@ -123,9 +109,9 @@
                     <option value="hsl">HSL</option>
                     <option value="hsla">HSLA</option>
                 </select>
-                <input type="text" id="color-value-input" v-model="colorValue" class="color-value-input"
+                <input type="text" v-model="colorValue" class="color-value-input"
                     @input="handleColorValueInput" />
-                <button id="copy-color-btn" class="copy-color-btn" @click="copyColorToClipboard">
+                <button class="copy-color-btn" @click="copyColorToClipboard">
                     <svg width="12px" height="12px" viewBox="0 0 448 512">
                         <path fill="currentColor"
                             d="M192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-200.6c0-17.4-7.1-34.1-19.7-46.2L370.6 17.8C358.7 6.4 342.8 0 326.3 0L192 0zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-16-64 0 0 16-192 0 0-256 16 0 0-64-16 0z" />
@@ -143,7 +129,43 @@
 
 <script setup>
 // 引入Vue相关的hooks
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch, markRaw, defineComponent } from 'vue';
+
+// 监听组件可见性变化的IntersectionObserver实例
+const visibilityObserver = ref(null);
+
+// 定义预览装饰件组件
+const PreviewDecoration = markRaw(defineComponent({
+    name: 'PreviewDecoration',
+    __name: "preview-decoration",
+    setup() {
+        // 生成全局唯一ID
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substr(2, 9);
+        const gradientId = 'gradient_' + timestamp + '_' + random;
+        return {
+            gradientId
+        };
+    },
+    template: `<svg viewBox="0 0 83.6 123.5"  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient :id="gradientId" x1="-1.0936279296875" y1="32.566619873046875" 
+        x2="78.64790344238281" y2="79.79045104980469" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#CCCCCC" />
+        <stop offset="0.2838" stop-color="#F2F2F2" stop-opacity="1" />
+        <stop offset="0.5698" stop-color="#393939" stop-opacity="1" />
+        <stop offset="0.8342" stop-color="#A6A6A6" stop-opacity="1" />
+        <stop offset="1" stop-color="#E0E0E0" />
+      </linearGradient>
+    </defs>
+    <g>
+    <path 
+      d="M41.823 5C62.1614 5 78.6479 21.448 78.6479 41.737C78.6479 54.418 72.2079 65.598 62.412 72.2L58.961 74.07L54.0405 76.08C50.828 78.11 47.9152 81.555 46.0588 85.938C44.2025 90.318 43.7605 94.807 44.5413 98.52L44.6205 100.142L44.5533 103.003C42.7371 111.86 34.8798 118.527 25.4628 118.527C14.6987 118.527 5.9753 109.821 5.9753 99.085C5.9753 96.399 6.52058 93.84 7.50786 91.514L8.413 90.176L9.55165 88.817C12.1978 86.092 14.2206 82.062 14.9953 77.369C16.158 70.33 13.9749 65.288 10.3626 60.524L7.89476 56.037C6.02938 51.642 5 46.809 5 41.737C5 21.448 21.4875 5 41.823 5ZM42.0324 11.8275C25.6214 11.8275 12.3184 25.0995 12.3184 41.4715C12.3184 57.8435 25.6214 71.1155 42.0324 71.1155C58.4424 71.1155 71.7454 57.8435 71.7454 41.4715C71.7454 25.0995 58.4424 11.8275 42.0324 11.8275ZM25.5844 84.6255C17.8804 84.6255 11.6354 90.8555 11.6354 98.5415C11.6354 106.228 17.8804 112.459 25.5844 112.459C33.2884 112.459 39.5334 106.228 39.5334 98.5415C39.5334 90.8555 33.2884 84.6255 25.5844 84.6255Z" 
+      stroke="rgba(100, 100, 100, 1)" stroke-width="2" fill-rule="evenodd" :fill="'url(#' + gradientId + ')'">
+    </path>
+    </g>
+  </svg>`
+}));
 
 // 定义props
 const props = defineProps({
@@ -540,7 +562,7 @@ const initialColorStyle = computed(() => {
 const createRing = (element, currentColor = null) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const size = Math.min(element.clientWidth, element.clientHeight);
+    const size = 220;
     const scale = 2;
     canvas.width = size * scale;
     canvas.height = size * scale;
@@ -653,7 +675,8 @@ const createRing = (element, currentColor = null) => {
 const createColorWheel = (element) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const size = Math.min(element.clientWidth, element.clientHeight);
+    // 确保size始终为正数，即使元素尚未完全渲染样式
+    const size = 200;
     const scale = 2;
     canvas.width = size * scale;
     canvas.height = size * scale;
@@ -1198,28 +1221,35 @@ const updateBackgroundColor = (index) => {
 };
 
 // 计算点击位置对应的索引
-const getBgColorIndex = (clientY) => {
-    if (!colorPickerContainer.value) return 0;
+// 注意：DOM事件对象中没有直接提供相对于元素的坐标值
+// 需要通过getBoundingClientRect()计算获得元素内部坐标
+const getBgColorIndex = (element, clientY) => {
+    if (!colorPickerContainer.value || !element) return 0;
 
-    const bgColorSlider = document.getElementById('bgColorSlider');
-    if (!bgColorSlider) return 0;
-
-    const rect = bgColorSlider.getBoundingClientRect();
-    const y = clientY - rect.top;
-    const relativeY = Math.max(0, Math.min(1, y / rect.height));
+    // 使用getBoundingClientRect()获取元素位置信息
+    const rect = element.getBoundingClientRect();
+    // 计算事件位置相对于元素顶部的y坐标（元素内部y值）
+    const localY = clientY - rect.top;
+    const relativeY = Math.max(0, Math.min(1, localY / rect.height));
     return Math.floor(relativeY * bgColors.length);
 };
 
 // 处理背景色滑块点击
 const handleBgColorClick = (e) => {
-    const index = getBgColorIndex(e.clientY);
+    // 在事件处理函数中，可以使用currentTarget获取当前绑定事件的元素
+    const bgColorSlider = e.currentTarget;
+    // 使用clientY和currentTarget计算元素内部的y值
+    const index = getBgColorIndex(bgColorSlider, e.clientY);
     updateBackgroundColor(index);
 };
 
 // 处理背景色滑块触摸
 const handleBgColorTouchStart = (e) => {
     if (e.touches.length > 0) {
-        const index = getBgColorIndex(e.touches[0].clientY);
+        // 在触摸事件中，同样可以使用currentTarget获取事件绑定的元素
+        const bgColorSlider = e.currentTarget;
+        // 使用触摸点的clientY计算元素内部的y值
+        const index = getBgColorIndex(bgColorSlider, e.touches[0].clientY);
         updateBackgroundColor(index);
         e.preventDefault();
     }
@@ -1452,6 +1482,9 @@ onMounted(() => {
         if (props.modelValue) {
             handleModelValueChange(props.modelValue);
         }
+
+        // 设置IntersectionObserver来监测组件可见性变化
+        setupVisibilityObserver();
     });
 });
 
@@ -1465,7 +1498,34 @@ onBeforeUnmount(() => {
     // 移除全局拖拽相关事件监听器
     document.removeEventListener('dragover', handleGlobalDragOver);
     document.removeEventListener('drop', handleGlobalDrop);
+
+    // 断开可见性观察器
+    if (visibilityObserver.value) {
+        visibilityObserver.value.disconnect();
+    }
 });
+
+/**
+ * 设置IntersectionObserver来监测组件可见性变化
+ * 当组件从不可见变为可见时，重新读取存储的收藏色
+ */
+const setupVisibilityObserver = () => {
+    if ('IntersectionObserver' in window && colorPickerContainer.value) {
+        visibilityObserver.value = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // 当组件变为可见时
+                if (entry.isIntersecting) {
+                    loadFavoriteColorsFromStorage();
+                }
+            });
+        }, {
+            threshold: 0.1 // 当至少10%的组件可见时触发
+        });
+
+        // 开始观察组件根元素
+        visibilityObserver.value.observe(colorPickerContainer.value);
+    }
+};
 
 // 监听props变化，更新当前颜色
 const { initialColor: newInitialColor } = props;
@@ -1631,8 +1691,6 @@ watch(() => props.modelValue, (newValue) => {
     position: absolute;
     left: 40px;
     top: 40px;
-    width: 220px;
-    height: 220px;
     filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.5));
 }
 
@@ -1643,7 +1701,6 @@ watch(() => props.modelValue, (newValue) => {
     top: 0;
     width: 220px;
     height: 220px;
-    overflow: hidden;
 }
 
 /* 彩色圆盘 */
@@ -1653,7 +1710,6 @@ watch(() => props.modelValue, (newValue) => {
     top: 10px;
     width: 200px;
     height: 200px;
-    overflow: hidden;
 }
 
 /* 颜色预览 */
@@ -1664,7 +1720,6 @@ watch(() => props.modelValue, (newValue) => {
     width: 66px;
     height: 66px;
     border-radius: 50%;
-    overflow: hidden;
     z-index: 10;
     border: 0px solid #808080;
 }
@@ -1677,7 +1732,6 @@ watch(() => props.modelValue, (newValue) => {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    overflow: hidden;
     z-index: 10;
     border: 0px solid #808080;
 }
@@ -1731,13 +1785,8 @@ watch(() => props.modelValue, (newValue) => {
 
 /* 背景色切换区域 */
 .bg-color-slider {
-    position: absolute;
-    height: 64px;
-    width: 16px;
     border-radius: 8px;
     cursor: pointer;
-    top: 140px;
-    left: 10px;
     background: linear-gradient(to bottom,
             var(--chromawheel-bg-color) 0%, var(--chromawheel-bg-color) 25%,
             #ffffff 25%, #ffffff 50%,
